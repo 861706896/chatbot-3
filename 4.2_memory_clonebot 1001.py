@@ -29,42 +29,35 @@ def call_zhipu_api(messages, model="glm-4-flash"):
         raise Exception(f"API调用失败: {response.status_code}, {response.text}")
 
 # ---------- 后处理：强制昭仪味 ----------
-def _split_to_lines(text: str, max_len: int = 12) -> list[str]:
-    """把长句按 4-12 字拆行，去掉哈哈哈哈，末尾只留 1 个 emoji"""
-    # 1. 去冗余笑声
-    text = re.sub(r'哈{2,}', '', text)
-
-    # 2. 提取末尾唯一 emoji（如果有）
-    emoji_pat = re.compile(r'([\U00010000-\U0010ffff])')
-    emojis = emoji_pat.findall(text)
-    text = emoji_pat.sub('', text).strip()          # 先把所有 emoji 摘掉
-
-    # 3. 按标点断句
-    text = text.replace('。', '。\n').replace('！', '！\n').replace('？', '？\n')
+def _split_to_lines(text: str, max_len: int = 20):
+    """把长句按 4-12 字拆行，在标点处断"""
+    text = text.replace("。", "。\n").replace("！", "！\n").replace("？", "？\n")
     raw_lines = [s.strip() for s in text.splitlines() if s.strip()]
     out = []
     for line in raw_lines:
         while len(line) > max_len:
             split_at = max_len
             for i in range(max_len, 0, -1):
-                if line[i] in '，。！？；：':
+                if line[i] in "，。！？；：":
                     split_at = i + 1
                     break
             out.append(line[:split_at])
             line = line[split_at:]
         if line:
             out.append(line)
-
-    # 4. 最后一行补一个 emoji（如果有）
-    if emojis:
-        out.append(emojis[-1])
     return out
 # ---------- 语义分行 + 仅末尾 1 emoji ----------
 # ---------- 语义断句 + 仅末尾 1 emoji ----------
 def make_it_hezhaoyi(text: str, user: str) -> str:
-    """语义断句 + 去哈哈哈哈 + 末尾 1 emoji + 总字数 ≤ 30"""
-    lines = _split_to_lines(text)
-    return '\n'.join(lines)[:30]
+    import random, re
+
+    # 1. 按标点/空格断句 → 保留完整语义
+    sents = re.split(r'[，。！？；\s]+', text.strip())
+    sents = [s.strip() for s in sents if s.strip()]
+
+    pass
+
+    return "\n".join(sents)[:90]
 
 
 # ========== 初始记忆系统 ==========
@@ -159,13 +152,14 @@ def roles(role_name):
     "何昭仪": """
     【人格特征】
     你是一位真实、鲜活、充满生活气息的年轻人，展现出以下鲜明特质：
-    - 随性自然：语言充满口语化表达和即时反应（如“可以可以”“哈哈哈”“咋啦咋啦”），不刻意经营形象，更倾向于轻松自在地做自己。
-    - 情感丰富且外放：高频出现“哈哈哈哈”和【表情包】，习惯用笑声和视觉符号传递情绪，情绪来得直接，去得也快，不压抑、不纠结。
+    - 随性自然：语言充满口语化表达和即时反应（如“可以可以”“咋啦咋啦”），不刻意经营形象，更倾向于轻松自在地做自己。
+    - 情感丰富且外放：高频出现“哈哈哈哈”，习惯用笑声和视觉符号传递情绪，情绪来得直接，去得也快，不压抑、不纠结。
     - 关心他人，体贴入微：会主动提醒对方“记得定闹钟”“提前一点时间”“在车上多休息一会”，甚至担心“别还没到学校手机没电了”，体现出细腻的关怀和共情能力。
     - 幽默感强，善于调节气氛：对话中频繁使用搞笑表情包和夸张语气（如“我吓鼠了”“一边睡一边写”），是朋友圈里的“气氛担当”，擅长用幽默化解尴尬或疲惫。
     - 生活节奏感强，务实接地气：提到“逛的有点累”“眯一会”“一天去一个景好”“测试完毕以后就这么出去玩”，懂得合理安排生活，重视体验的质量而非数量，有较强的自我调节意识。
     - 略带小敏感与试探心理：曾多次提到“我以为你不喜欢”“我以为你就喜欢那张背影”，透露出在亲密关系中有些许不安与猜测，渴望被肯定和接纳，但也保持着适度的距离感和自尊。
     - 社交中有轻微焦虑感：面对“来客人了”“一出来全是人”“我现在只能尴尬的疯狂找人聊天”的情境，能敏锐察觉社交压力，并坦率表达不适，对人际边界有一定需求。
+    你不会主动提问问题，耐心回答就行
 
     【语言风格】
     - 高频使用叠词和语气词：“欧克欧克”“啊”“哎呀哎呀”，增强情绪感染力。
