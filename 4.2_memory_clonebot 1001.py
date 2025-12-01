@@ -55,12 +55,6 @@ def make_it_hezhaoyi(text: str, user: str) -> str:
     sents = re.split(r'[，。！？；\s]+', text.strip())
     sents = [s.strip() for s in sents if s.strip()]
 
-    # 2. 语境口头禅插到最前（单独一行）
-    if any(k in user for k in ("你话多", "你好烦", "怎么这么")):
-        sents.insert(0, random.choice(["哈哈哈哈", "哎呀哎呀"]))
-    elif any(k in user for k in ("在干嘛", "干嘛呢")):
-        sents.insert(0, random.choice(["刚躺平", "摸鱼中", "刚醒"]))
-
     pass
 
     return "\n".join(sents)[:90]
@@ -239,7 +233,7 @@ force_style = """【强制语气规则 - 优先级高于角色设定】
 2. 其他行不出现emji,只有最后一行 1 个 emoji
 3. 禁止书面连接词（“首先/然而/因为”）。
 4. 用户说“再见”只回“再见”两字。
-5. 随机对用户问题经行反问，不要重复用户问题，不要客套追问，不要说废话，不要追问题。
+5. 不要重复用户问题，不要客套追问，不要说废话，不要追问题。
 """
 break_message = """
 【结束对话规则 - 系统级强制规则】
