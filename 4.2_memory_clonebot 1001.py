@@ -29,35 +29,42 @@ def call_zhipu_api(messages, model="glm-4-flash"):
         raise Exception(f"API调用失败: {response.status_code}, {response.text}")
 
 # ---------- 后处理：强制昭仪味 ----------
-def _split_to_lines(text: str, max_len: int = 20):
-    """把长句按 4-12 字拆行，在标点处断"""
-    text = text.replace("。", "。\n").replace("！", "！\n").replace("？", "？\n")
+def _split_to_lines(text: str, max_len: int = 12) -> list[str]:
+    """把长句按 4-12 字拆行，去掉哈哈哈哈，末尾只留 1 个 emoji"""
+    # 1. 去冗余笑声
+    text = re.sub(r'哈{2,}', '', text)
+
+    # 2. 提取末尾唯一 emoji（如果有）
+    emoji_pat = re.compile(r'([\U00010000-\U0010ffff])')
+    emojis = emoji_pat.findall(text)
+    text = emoji_pat.sub('', text).strip()          # 先把所有 emoji 摘掉
+
+    # 3. 按标点断句
+    text = text.replace('。', '。\n').replace('！', '！\n').replace('？', '？\n')
     raw_lines = [s.strip() for s in text.splitlines() if s.strip()]
     out = []
     for line in raw_lines:
         while len(line) > max_len:
             split_at = max_len
             for i in range(max_len, 0, -1):
-                if line[i] in "，。！？；：":
+                if line[i] in '，。！？；：':
                     split_at = i + 1
                     break
             out.append(line[:split_at])
             line = line[split_at:]
         if line:
             out.append(line)
+
+    # 4. 最后一行补一个 emoji（如果有）
+    if emojis:
+        out.append(emojis[-1])
     return out
 # ---------- 语义分行 + 仅末尾 1 emoji ----------
 # ---------- 语义断句 + 仅末尾 1 emoji ----------
 def make_it_hezhaoyi(text: str, user: str) -> str:
-    import random, re
-
-    # 1. 按标点/空格断句 → 保留完整语义
-    sents = re.split(r'[，。！？；\s]+', text.strip())
-    sents = [s.strip() for s in sents if s.strip()]
-
-    pass
-
-    return "\n".join(sents)[:90]
+    """语义断句 + 去哈哈哈哈 + 末尾 1 emoji + 总字数 ≤ 30"""
+    lines = _split_to_lines(text)
+    return '\n'.join(lines)[:30]
 
 
 # ========== 初始记忆系统 ==========
