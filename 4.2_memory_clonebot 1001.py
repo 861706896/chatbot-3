@@ -188,8 +188,6 @@ def roles(role_name):
     """
 }
         
- 
-    
     personality = role_personality.get(role_name, "你是一个普通的人，没有特殊角色特征。")
     
     # ========== 第三步：整合记忆和人格 ==========
