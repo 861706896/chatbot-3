@@ -345,34 +345,32 @@ if user_input:
                 result = call_zhipu_api(st.session_state.conversation_history)
                 assistant_reply = result['choices'][0]['message']['content']
 
-                # 1. 拆行
+                # 1. 拆成 4-12 字一行
                 lines = _split_to_lines(assistant_reply)
 
-                # 2. 逐行打字效果
+                # 2. 逐行打字效果（只打一次，不重复写）
                 placeholder = st.empty()
                 showed = ""
                 for line in lines:
-                    showed += line + "  \n"  # 两个空格 = markdown 换行
-                    placeholder.markdown(showed)
-                    time.sleep(0.08)  # 可调速度
+                    showed += line + "\n"
+                    placeholder.text(showed)          # 用 text 保留换行
+                    time.sleep(0.06)                   # 速度可调
 
-                    # 3. 存入历史时保留换行符
-                    st.session_state.conversation_history.append(
+                # 3. 存历史：只存一次，且存拆行后的文本
+                st.session_state.conversation_history.append(
                     {"role": "assistant", "content": "\n".join(lines)}
                 )
-                
-                # 添加AI回复到历史
-                st.session_state.conversation_history.append({"role": "assistant", "content": assistant_reply})
-                
-                # 显示AI回复
-                st.write(assistant_reply)
-                
-                # 检查是否结束
-                reply_cleaned = assistant_reply.strip().replace(" ", "").replace("！", "").replace("!", "").replace("，", "").replace(",", "")
-                if reply_cleaned == "再见" or (len(reply_cleaned) <= 5 and "再见" in reply_cleaned):
+
+                # 4. 结束检测
+                if assistant_reply.strip() in {"再见", "再见。", "再见！"}:
                     st.info("对话已结束")
                     st.stop()
-                    
+
             except Exception as e:
                 st.error(f"发生错误: {e}")
                 st.session_state.conversation_history.pop()  # 移除失败的用户消息
+
+
+
+
+           
