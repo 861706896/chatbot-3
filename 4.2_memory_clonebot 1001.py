@@ -264,6 +264,27 @@ natural_style = """
 # role_system 已经包含了记忆和人格设定，直接使用即可
 system_message = role_system + "\n\n" + natural_style + "\n\n" + break_message
 
+def memory_prompt():
+    """每次把记忆体原句重新拼成字符串，随用户消息一起塞给模型"""
+    file = ROLE_MEMORY_MAP.get(st.session_state.selected_role)
+    if not file:
+        return ""
+    path = os.path.join(MEMORY_FOLDER, file)
+    if not os.path.exists(path):
+        return ""
+    with open(path, encoding="utf-8") as f:
+        data = json.load(f)
+    # 跟原来一样，把 content 字段抽出来
+    if isinstance(data, list):
+        lines = [d.get("content", "") for d in data if isinstance(d, dict)]
+    elif isinstance(data, dict):
+        lines = [data.get("content", "")]
+    else:
+        lines = []
+    # 取最近 15 句，避免超长
+    lines = lines[-15:]
+    return "【你真实的说话范例】\n" + "\n".join(lines) + "\n必须逐字模仿上述语气/停顿/口头禅，禁止书面腔。\n"
+
 # ========== Streamlit Web 界面 ==========
 st.set_page_config(
     page_title="何昭仪的AI分身",
@@ -349,6 +370,8 @@ if user_input:
         st.info("对话已结束")
         st.stop()
     
+    user_input = memory_prompt() + user_input          # ← 把记忆体放在用户话前面
+    st.session_state.conversation_history.append({"role": "user", "content": user_input})
     # 添加用户消息到历史
     st.session_state.conversation_history.append({"role": "user", "content": user_input})
     
