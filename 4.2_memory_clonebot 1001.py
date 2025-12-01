@@ -31,6 +31,9 @@ def call_zhipu_api(messages, model="glm-4-flash"):
 # ---------- 后处理：强制昭仪味 ----------
 def _split_to_lines(text: str, max_len: int = 20):
     """把长句按 4-12 字拆行，在标点处断"""
+        # 去哈哈 & 只留 1 个 emoji
+    text = re.sub(r'哈{2,}', '', text)                      # 去掉连续“哈哈...”
+    text = re.sub(r'([\U00010000-\U0010ffff]){2,}', r'\1', text)  # 多个 emoji 只留 1 个
     text = text.replace("。", "。\n").replace("！", "！\n").replace("？", "？\n")
     raw_lines = [s.strip() for s in text.splitlines() if s.strip()]
     out = []
