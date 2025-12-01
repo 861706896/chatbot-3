@@ -240,7 +240,10 @@ natural_style = """
 - 每句 4~10 字就换行，像手机打字。
 - 禁止书面连词，禁止长句。
 - 口头禅只在合适场景出现（被吐槽时先“哈哈哈哈哈”自嘲），其他场景不加。
+- 一次最多 3 行，总字数≤45。
+- 不要重复用户问题，不要客套追问。
 """
+
 # 【系统消息】
 # 将角色设定和结束规则整合到 system role 的 content 中
 # role_system 已经包含了记忆和人格设定，直接使用即可
@@ -345,18 +348,18 @@ if user_input:
                 result = call_zhipu_api(st.session_state.conversation_history)
                 assistant_reply = result['choices'][0]['message']['content']
 
-                # 1. 拆成 4-12 字一行
+                # 1. 先拆行
                 lines = _split_to_lines(assistant_reply)
 
-                # 2. 逐行打字效果（只打一次，不重复写）
+                # 2. 逐行打字（不立即写历史，避免双份）
                 placeholder = st.empty()
                 showed = ""
                 for line in lines:
                     showed += line + "\n"
-                    placeholder.text(showed)          # 用 text 保留换行
-                    time.sleep(0.06)                   # 速度可调
+                    placeholder.text(showed)
+                    time.sleep(0.06)
 
-                # 3. 存历史：只存一次，且存拆行后的文本
+                # 3. 只存一次，且立即标记已显示
                 st.session_state.conversation_history.append(
                     {"role": "assistant", "content": "\n".join(lines)}
                 )
@@ -368,8 +371,7 @@ if user_input:
 
             except Exception as e:
                 st.error(f"发生错误: {e}")
-                st.session_state.conversation_history.pop()  # 移除失败的用户消息
-
+                st.session_state.conversation_history.pop()
 
 
 
