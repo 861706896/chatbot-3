@@ -29,8 +29,8 @@ def call_zhipu_api(messages, model="glm-4-flash"):
         raise Exception(f"API调用失败: {response.status_code}, {response.text}")
 
 # ---------- 后处理：强制昭仪味 ----------
-def _split_to_lines(text: str, max_len: int = 12):
-    """把长句按 4-12 字拆行，优先在标点处断"""
+def _split_to_lines(text: str, max_len: int = 20):
+    """把长句按 4-12 字拆行，在标点处断"""
     text = text.replace("。", "。\n").replace("！", "！\n").replace("？", "？\n")
     raw_lines = [s.strip() for s in text.splitlines() if s.strip()]
     out = []
@@ -237,11 +237,11 @@ break_message = """
 # 【自然语气补充】
 natural_style = """
 回复格式：
-- 每句 4~10 字就换行，像手机打字。
+- 每句 1~20字就换行，优先在标点初断句，像手机打字。
 - 禁止书面连词，禁止长句。
 - 口头禅只在合适场景出现（被吐槽时先“哈哈哈哈哈”自嘲），其他场景不加。
-- 一次最多 3 行，总字数≤45。
-- 不要重复用户问题，不要客套追问。
+- 一次最多 3 行，总字数≤30。
+- 不要重复用户问题，不要客套追问，不要说废话，不要追问题
 """
 
 # 【系统消息】
@@ -357,7 +357,7 @@ if user_input:
                 for line in lines:
                     showed += line + "\n"
                     placeholder.text(showed)
-                    time.sleep(0.06)
+                    time.sleep(1)
 
                 # 3. 只存一次，且立即标记已显示
                 st.session_state.conversation_history.append(
