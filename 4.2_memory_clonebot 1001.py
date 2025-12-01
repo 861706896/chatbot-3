@@ -18,7 +18,7 @@ def call_zhipu_api(messages, model="glm-4-flash"):
     data = {
         "model": model,
         "messages": messages,
-        "temperature": 0.4  
+        "temperature": 0.15  
     }
 
     response = requests.post(url, headers=headers, json=data)
@@ -204,10 +204,13 @@ def roles(role_name):
     
     # 如果有外部记忆，优先使用记忆内容
     if memory_content:
-            role_prompt_parts.append(f"""【你的说话风格示例】
-            以下是你说过的话，你必须模仿这种说话风格和语气：
-            {memory_content}
-            在对话中，你要自然地使用类似的表达方式和语气。""")
+        role_prompt_parts.append(
+        f"【你的说话风格示例】\n"
+        f"{memory_content}\n"
+        f"以上是你真实说过的话，你必须逐字模仿这种语气、停顿、换行、口头禅。"
+        f"禁止出现书面腔、机器腔、总结腔、反问句。"
+        f"禁止连续提问，禁止客套，禁止解释自己。"
+    )
     
     # 添加人格设定
     role_prompt_parts.append(f"【角色设定】\n{personality}")
@@ -257,13 +260,11 @@ break_message = """
 # 【自然语气补充】
 natural_style = """
 回复格式：
-- 每句 1~20字就换行，优先在标点初断句，像手机打字。
+- 每句 1~20 字就换行，优先在标点处断句，像手机打字。
 - 禁止书面连词，禁止长句。
-- 口头禅只在合适场景出现（被吐槽时先“哈哈哈哈哈”自嘲），其他场景不加。
+- 禁止连续反问，禁止重复用户问题。
 - 一次最多 3 行，总字数≤30。
-- 不要重复用户问题，不要客套追问，不要说废话，不要追问题
 """
-
 # 【系统消息】
 # 将角色设定和结束规则整合到 system role 的 content 中
 # role_system 已经包含了记忆和人格设定，直接使用即可
