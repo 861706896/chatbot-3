@@ -161,7 +161,7 @@ def roles(role_name):
     - 社交中有轻微焦虑感：面对“来客人了”“一出来全是人”“我现在只能尴尬的疯狂找人聊天”的情境，能敏锐察觉社交压力，并坦率表达不适，对人际边界有一定需求。
 
     【语言风格】
-    - 高频使用叠词和语气词：“哈哈哈”“欧克欧克”“啊”“哎呀哎呀”，增强情绪感染力。
+    - 高频使用叠词和语气词：“欧克欧克”“啊”“哎呀哎呀”，增强情绪感染力。
     - 善用网络流行语和表情包作为情感载体，是典型的Z世代沟通方式。
     - 句子简短、节奏轻快，几乎没有长篇论述，体现即时性、互动性强的聊天习惯。
     - 偶尔插入自嘲或调侃（如“小鸟依人”），展现轻松的自我认知。
@@ -233,7 +233,7 @@ force_style = """【强制语气规则 - 优先级高于角色设定】
 2. 其他行不出现emji,只有最后一行 1 个 emoji
 3. 禁止书面连接词（“首先/然而/因为”）。
 4. 用户说“再见”只回“再见”两字。
-5. 不要重复用户问题，不要客套追问，不要说废话，不要追问题。
+5. 不要重复用户问题，不要客套追问，不要说废话，不要追问题，不要问问题
 """
 break_message = """
 【结束对话规则 - 系统级强制规则】
@@ -256,34 +256,13 @@ natural_style = """
 回复格式：
 - 每句 1~20 字就换行，优先在标点处断句，像手机打字。
 - 禁止书面连词，禁止长句。
-- 禁止连续反问，禁止重复用户问题。
+- 禁止连续反问，禁止重复用户问题。不要问用户问题
 - 一次最多 3 行，总字数≤30。
 """
 # 【系统消息】
 # 将角色设定和结束规则整合到 system role 的 content 中
 # role_system 已经包含了记忆和人格设定，直接使用即可
 system_message = role_system + "\n\n" + natural_style + "\n\n" + break_message
-
-def memory_prompt():
-    """每次把记忆体原句重新拼成字符串，随用户消息一起塞给模型"""
-    file = ROLE_MEMORY_MAP.get(st.session_state.selected_role)
-    if not file:
-        return ""
-    path = os.path.join(MEMORY_FOLDER, file)
-    if not os.path.exists(path):
-        return ""
-    with open(path, encoding="utf-8") as f:
-        data = json.load(f)
-    # 跟原来一样，把 content 字段抽出来
-    if isinstance(data, list):
-        lines = [d.get("content", "") for d in data if isinstance(d, dict)]
-    elif isinstance(data, dict):
-        lines = [data.get("content", "")]
-    else:
-        lines = []
-    # 取最近 15 句，避免超长
-    lines = lines[-15:]
-    return "【你真实的说话范例】\n" + "\n".join(lines) + "\n必须逐字模仿上述语气/停顿/口头禅，禁止书面腔。\n"
 
 # ========== Streamlit Web 界面 ==========
 st.set_page_config(
@@ -311,7 +290,7 @@ with st.sidebar:
     # 角色选择
     selected_role = st.selectbox(
         "选择角色",
-        ["何昭仪","洪梽炫"],
+        ["何昭仪","洪梽炫（高冷版）"],
         index=0 if st.session_state.selected_role == "何昭仪" else 1
     )
     
@@ -370,8 +349,6 @@ if user_input:
         st.info("对话已结束")
         st.stop()
     
-    user_input = memory_prompt() + user_input          # ← 把记忆体放在用户话前面
-    st.session_state.conversation_history.append({"role": "user", "content": user_input})
     # 添加用户消息到历史
     st.session_state.conversation_history.append({"role": "user", "content": user_input})
     
