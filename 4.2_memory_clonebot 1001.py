@@ -2,6 +2,7 @@ import streamlit as st
 import requests
 import json
 import os  # 新增：用于文件操作
+import time
 
 from requests.utils import stream_decode_response_unicode
 
@@ -318,25 +319,33 @@ if user_input:
     with st.chat_message("user"):
         st.write(user_input)
     
-    # 调用API获取AI回复
-    with st.chat_message("assistant"):
-        with st.spinner("思考中..."):
-            try:
-                result = call_zhipu_api(st.session_state.conversation_history)
-                assistant_reply = result['choices'][0]['message']['content']
-                
-                # 添加AI回复到历史
-                st.session_state.conversation_history.append({"role": "assistant", "content": assistant_reply})
-                
-                # 显示AI回复
-                st.write(assistant_reply)
-                
-                # 检查是否结束
-                reply_cleaned = assistant_reply.strip().replace(" ", "").replace("！", "").replace("!", "").replace("，", "").replace(",", "")
-                if reply_cleaned == "再见" or (len(reply_cleaned) <= 5 and "再见" in reply_cleaned):
-                    st.info("对话已结束")
-                    st.stop()
-                    
-            except Exception as e:
-                st.error(f"发生错误: {e}")
-                st.session_state.conversation_history.pop()  # 移除失败的用户消息
+   # 调用API获取AI回复
+with st.chat_message("assistant"):
+    try:
+        result = call_zhipu_api(st.session_state.conversation_history)
+        assistant_reply = result['choices'][0]['message']['content']
+
+        # 1. 拆成一行一行
+        lines = [ln.strip() for ln in assistant_reply.splitlines() if ln.strip()]
+
+        # 2. 模拟真人打字：一行一行蹦
+        placeholder = st.empty()
+        shown = []
+        for line in lines:
+            shown.append(line)
+            placeholder.code("\n".join(shown), language=None)
+            time.sleep(0.4)          # 控制节奏，可改快慢
+
+        # 3. 记录完整回复到历史
+        st.session_state.conversation_history.append(
+            {"role": "assistant", "content": assistant_reply}
+        )
+
+        # 4. 结束词检测
+        if assistant_reply.strip() in {"再见", "再见！"}:
+            st.info("对话已结束")
+            st.stop()
+
+    except Exception as e:
+        st.error(f"发生错误: {e}")
+        st.session_state.conversation_history.pop()  # 去掉失败的用户消息
