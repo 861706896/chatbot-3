@@ -272,7 +272,7 @@ st.set_page_config(
 if "conversation_history" not in st.session_state:
     st.session_state.conversation_history = []
 if "selected_role" not in st.session_state:
-    st.session_state.selected_role = "人质"
+    st.session_state.selected_role = "何昭仪"
 if "initialized" not in st.session_state:
     st.session_state.initialized = False
 
