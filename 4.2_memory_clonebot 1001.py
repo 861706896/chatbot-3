@@ -29,26 +29,37 @@ def call_zhipu_api(messages, model="glm-4-flash"):
         raise Exception(f"API调用失败: {response.status_code}, {response.text}")
 
 # ---------- 后处理：强制昭仪味 ----------
-def _split_to_lines(text: str, max_len: int = 20):
-    """把长句按 4-12 字拆行，在标点处断"""
-        # 去哈哈 & 只留 1 个 emoji
-    text = re.sub(r'哈{2,}', '', text)                      # 去掉连续“哈哈...”
-    text = re.sub(r'([\U00010000-\U0010ffff]){2,}', r'\1', text)  # 多个 emoji 只留 1 个
-    text = text.replace("。", "。\n").replace("！", "！\n").replace("？", "？\n")
-    raw_lines = [s.strip() for s in text.splitlines() if s.strip()]
+def _split_to_lines(text: str, max_len: int = 20) -> list[str]:
+    import re
+
+    # 0. 去掉前导标点（包括全角/半角引号、逗号等）
+    text = re.sub(r'^[，。！？；：“”‘’"、.!?,;:"\'\s]+', '', text.strip())
+
+    # 1. 去哈哈 & 多余 emoji
+    text = re.sub(r'哈{2,}', '', text)
+    text = re.sub(r'([\U00010000-\U0010ffff]){2,}', r'\1', text)
+
+    # 2. 按标点断句并去掉句末标点
+    sents = re.split(r'[，。！？；：、]+', text)
+    sents = [s.strip() for s in sents if s.strip()]
+
+    # 3. 长度折行
     out = []
-    for line in raw_lines:
-        while len(line) > max_len:
-            split_at = max_len
-            for i in range(max_len, 0, -1):
-                if line[i] in "，。！？；：":
-                    split_at = i + 1
-                    break
-            out.append(line[:split_at])
-            line = line[split_at:]
-        if line:
-            out.append(line)
+    for sent in sents:
+        while len(sent) > max_len:
+            out.append(sent[:max_len])
+            sent = sent[max_len:]
+        if sent:
+            out.append(sent)
+
+    # 4. 最后一行留 1 个 emoji
+    if out:
+        emoji_match = re.search(r'[\U00010000-\U0010ffff]', out[-1])
+        if emoji_match:
+            emoji = emoji_match.group()
+            out[-1] = re.sub(r'[\U00010000-\U0010ffff]', '', out[-1]).strip() + emoji
     return out
+
 # ---------- 语义分行 + 仅末尾 1 emoji ----------
 # ---------- 语义断句 + 仅末尾 1 emoji ----------
 def make_it_hezhaoyi(text: str, user: str) -> str:
